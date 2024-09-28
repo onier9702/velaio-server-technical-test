@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -7,7 +7,12 @@ import { Person } from './entities/person.entity';
 import { Task } from './entities/task.entity';
 
 import { CreateTaskDto, PersonDto } from './dto/create-task.dto';
+import { PaginationDto } from './dto/pagination.dto';
+
 import { IMessage } from '../interfaces/message';
+import { ICountAndTotalTask } from '../interfaces/task';
+
+import { StatusTask } from '../enum/status-task.enum';
 
 @Injectable()
 export class TaskService {
@@ -69,7 +74,7 @@ export class TaskService {
       await this.taskRepository.save(newTask);
 
       return {
-        msg: 'Tarea creada correctamente',
+        msg: 'Tarea creada correctamente.',
       }
       
     } catch (error) {
@@ -97,25 +102,88 @@ export class TaskService {
     }
   }
 
-  findAll() {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<ICountAndTotalTask> {
+
+    const { 
+      limit = 10,
+      offset = 0,
+      name = null,
+      status = null,
+      initDate = null,
+      endDate = null,
+    } = paginationDto;
+
     try {
+
+      const qb = this.taskRepository.createQueryBuilder('t')
+        .leftJoinAndSelect('t.persons', 'p')
+        .leftJoinAndSelect('p.abilities', 'a')
+        .orderBy('t.status', 'DESC');
+
+      if (name) {
+        qb.andWhere('t.name LIKE :name', { name: `%${name}%` });
+      }
+
+      if (initDate) {
+        qb.andWhere('t.date >= :initDate', { initDate });
+      }
+
+      if (endDate) {
+          qb.andWhere('t.date <= :endDate', { endDate });
+      }
+
+      if (status) {
+        qb.andWhere('t.status = :status', { status });
+      }
+
+      const [ tasks, total ] = await qb
+        .take(limit)
+        .skip(offset)
+        .getManyAndCount();
+
+      return {
+        count: total,
+        tasks: tasks,
+      };
       
+    } catch (error) {
+      this.handleErrors(error);
+    }
+    
+  }
+
+  async findOne(id: number): Promise<Task> {
+    try {
+      const task = await this.taskRepository.findOneBy({id});
+      if (!task) {
+        throw new NotFoundException(`Tarea con ID: ${id} no encontrada en base datos.`);
+      }
+
+      return task;
     } catch (error) {
       this.handleErrors(error);
     }
   }
 
-  findOne(id: number) {
+  // set task as completed
+  async update(id: number): Promise<IMessage> {
+
     try {
-      
+      await this.findOne(id);
+      await this.taskRepository.update(
+        { id },
+        { status: StatusTask.COMPLETED },  
+      );
+
+      return {
+        msg: 'Tarea marcada como completada correctamente',
+      };
     } catch (error) {
       this.handleErrors(error);
     }
   }
-
-  // update(id: number, updateTaskDto: UpdateTaskDto) {
-  //   return `This action updates a #${id} task`;
-  // }
 
   // remove(id: number) {
   //   return `This action removes a #${id} task`;

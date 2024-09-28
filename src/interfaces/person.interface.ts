@@ -5,5 +5,5 @@ export interface IPerson {
 }
 
 export interface IPersonAblility {
-    name: string;
+    ability: string;
 }
