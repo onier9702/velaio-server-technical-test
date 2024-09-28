@@ -9,7 +9,7 @@ Backend server for Velaio Team. This is a technical test. Created by developer: 
 # Database information
 
 I use here MariaDB inside the docker network so MariaDB is free and it is better MySql solution today.
-The Network is created between the cuban-server app and cuban-mariadb (database runnning).
+The Network is created between the velaio-server app and velaio-mariadb (database runnning).
 
 # Note
 
@@ -20,7 +20,7 @@ You need to have installed docker app or binary package on your PC to run this d
 1. Clone the repository `git clone <url>`
 2. Replace the `.env.example` to `.env` file and configure the environment variables
 3. Create, run and start the container image with the command `docker compose -f docker-compose.dev.yml up -d`
-4. Enter to velaio-server container `docker exec -it cuban-server /bin/sh`
+4. Enter to velaio-server container `docker exec -it velaio-server /bin/sh`
 5. Generate entities in database inside the container, run this command `npm run migration:run`
 
 ## Installations
