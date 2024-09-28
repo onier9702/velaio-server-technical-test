@@ -1,0 +1,45 @@
+version: "3.7"
+services:
+  app:
+    container_name: ${VELAIO_CONTAINER_NAME:-velaio-server}
+    build: .
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=production
+    ports:
+      - "3011:3011"
+    volumes:
+      - .:/app
+    restart: always
+    depends_on: [mariadb]
+    networks:
+      velaionet:
+        aliases:
+          - velaio-app
+
+  mariadb:
+    image: "mariadb:${MARIADB_VERSION:-10.11.2}"
+    container_name: ${MARIADB_CONTAINER_NAME:-velaio-mariadb}
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "63312:3306"
+    restart: always
+    networks:
+      velaionet:
+        aliases:
+          - velaio-mariadb
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+
+networks:
+  velaionet:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
